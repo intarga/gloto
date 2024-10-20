@@ -32,13 +32,12 @@ type Token {
 pub fn main() -> Nil {
   let sample_proto =
     "
+// sample to parse:
 message Point {
   required int32 x = 1;
   required int32 y = 2;
+  // optional string label = 3;
 }"
-  // TODO: discard comments so we can put these back in
-  // // sample to parse:
-  //   // optional string label = 3;
 
   let lexer =
     lexer.simple([
@@ -49,9 +48,9 @@ message Point {
       lexer.token("=", Equals),
       lexer.token(";", Semicolon),
       lexer.int(Num),
-      lexer.comment("//", Comment),
       lexer.identifier("[A-Z]", "[a-zA-Z0-9_]", set.new(), PascalIdentifier),
       lexer.variable(set.new(), SnakeIdentifier),
+      lexer.comment("//", Comment) |> lexer.ignore,
       lexer.whitespace(Nil) |> lexer.ignore,
     ])
 
