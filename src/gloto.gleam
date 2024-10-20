@@ -65,6 +65,7 @@ message Point {
 
   let parse_field = {
     use toks <- nibble.then(nibble.take_until(fn(tok) { tok == Semicolon }))
+    use _ <- do(nibble.token(Semicolon))
 
     case toks {
       [
@@ -78,22 +79,14 @@ message Point {
     }
   }
 
-  // let parse_fields = {
-  //   todo
-  // }
-
   let parser = {
     use _ <- do(nibble.token(MessageKeyword))
     use message_name <- do(parse_pascal_identifier)
     use _ <- do(nibble.token(LeftCurly))
-    // use fields <- do(parse_fields)
-    use field1 <- do(parse_field)
-    use _ <- do(nibble.token(Semicolon))
-    use field2 <- do(parse_field)
-    use _ <- do(nibble.token(Semicolon))
+    use fields <- do(nibble.many(parse_field))
     use _ <- do(nibble.token(RightCurly))
 
-    return(Message(message_name, [field1, field2]))
+    return(Message(message_name, fields))
   }
 
   let assert Ok(tokens) = lexer.run(sample_proto, lexer)
