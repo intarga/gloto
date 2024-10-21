@@ -55,33 +55,45 @@ message Point {
     ])
 
   let parse_pascal_identifier = {
-    use tok <- nibble.take_map("Expected Pascal-case identifier")
+    use tok <- nibble.take_map("Expected PascalCase identifier")
     case tok {
       PascalIdentifier(str) -> Some(str)
       _ -> None
     }
   }
 
+  let parse_snake_identifier = {
+    use tok <- nibble.take_map("Expected snake_case identifier")
+    case tok {
+      SnakeIdentifier(str) -> Some(str)
+      _ -> None
+    }
+  }
+
+  let parse_num = {
+    use tok <- nibble.take_map("Expected number")
+    case tok {
+      Num(num) -> Some(num)
+      _ -> None
+    }
+  }
+
   let parse_field = {
-    use toks <- nibble.then(nibble.take_until(fn(tok) { tok == Semicolon }))
+    use _ <- do(nibble.token(FieldSpec))
+    use type_ <- do(parse_snake_identifier)
+    use name <- do(parse_snake_identifier)
+    use _ <- do(nibble.token(Equals))
+    use tag <- do(parse_num)
     use _ <- do(nibble.token(Semicolon))
 
-    case toks {
-      [
-        FieldSpec,
-        SnakeIdentifier(type_),
-        SnakeIdentifier(name),
-        Equals,
-        Num(tag),
-      ] -> nibble.return(Field(Some(Required), type_:, name:, tag:))
-      _ -> nibble.fail("Expected field")
-    }
+    return(Field(Some(Required), type_:, name:, tag:))
   }
 
   let parser = {
     use _ <- do(nibble.token(MessageKeyword))
     use message_name <- do(parse_pascal_identifier)
     use _ <- do(nibble.token(LeftCurly))
+    // TODO: should this be many1?
     use fields <- do(nibble.many(parse_field))
     use _ <- do(nibble.token(RightCurly))
 
